@@ -2,68 +2,98 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# Cấu hình trang Dashboard
-st.set_page_config(page_title="Superstore Analytics - Tuần 5", layout="wide")
-st.title("📊 Dashboard")
+# Cấu hình trang Dashboard rộng để chụp ảnh đẹp hơn
+st.set_page_config(page_title="Nhóm 14 - Dashboard Tuần 5", layout="wide")
 
-# Đọc dữ liệu
-df = pd.read_csv('SampleSuperstore.csv')
+# Tựa đề chính
+st.title("📊 Hệ thống Quản trị Kinh doanh Superstore - Nhóm 14")
+st.markdown("---")
 
-# --- THANH BÊN (SIDEBAR) ---
-st.sidebar.header("Bộ lọc Dữ liệu")
-# Bộ lọc Vùng miền
-region = st.sidebar.multiselect(
+# 1. Đọc dữ liệu
+try:
+    df = pd.read_csv('SampleSuperstore.csv')
+except FileNotFoundError:
+    st.error("Không tìm thấy file SampleSuperstore.csv. Vui lòng kiểm tra lại thư mục!")
+    st.stop()
+
+# --- SIDEBAR: CÁC THÀNH PHẦN TƯƠNG TÁC ---
+st.sidebar.header("🕹️ Bộ lọc Tương tác")
+st.sidebar.info("Cải tiến: Thêm bộ lọc Segment theo yêu cầu người dùng B")
+
+region_list = st.sidebar.multiselect(
     "Chọn Vùng (Region):", 
     options=df['Region'].unique(), 
     default=df['Region'].unique()
 )
-# Bộ lọc Phân khúc khách hàng (Cải tiến theo phản hồi người dùng)
-segment = st.sidebar.multiselect(
+
+segment_list = st.sidebar.multiselect(
     "Chọn Phân khúc (Segment):", 
     options=df['Segment'].unique(), 
     default=df['Segment'].unique()
 )
 
-# Lọc dữ liệu theo lựa chọn
-filtered_df = df[df['Region'].isin(region) & df['Segment'].isin(segment)]
+# Lọc dữ liệu theo lựa chọn của người dùng
+filtered_df = df[df['Region'].isin(region_list) & df['Segment'].isin(segment_list)]
 
-# --- NỘI DUNG CHÍNH ---
-col1, col2 = st.columns([2, 1])
+# --- HÀNG 1: CÁC CHỈ SỐ KPI (Cải tiến theo yêu cầu người dùng B) ---
+k1, k2, k3 = st.columns(3)
+with k1:
+    st.metric("Tổng Doanh thu", f"${filtered_df['Sales'].sum():,.0f}", delta="Sales")
+with k2:
+    profit = filtered_df['Profit'].sum()
+    st.metric("Tổng Lợi nhuận", f"${profit:,.0f}", delta="Profit", delta_color="normal")
+with k3:
+    avg_discount = filtered_df['Discount'].mean() * 100
+    st.metric("Tỷ lệ Chiết khấu TB", f"{avg_discount:.1f}%", delta="-Discount", delta_color="inverse")
+
+st.markdown("---")
+
+# --- HÀNG 2: BIỂU ĐỒ ĐỊA LÝ VÀ BIỂU ĐỒ CỘT ---
+col1, col2 = st.columns([1.6, 1])
 
 with col1:
-    # 1. BIỂU ĐỒ ĐỊA LÝ (Bắt buộc)
-    st.subheader("📍 Bản đồ Lợi nhuận theo Tiểu bang (USA)")
-    state_data = filtered_df.groupby('State')['Profit'].sum().reset_index()
+    # 2. BIỂU ĐỒ ĐỊA LÝ (Yêu cầu bắt buộc)
+    st.subheader("📍 Bản đồ Nhiệt Lợi nhuận theo Bang")
+    state_profit = filtered_df.groupby('State')['Profit'].sum().reset_index()
+    
+    # Sử dụng thang màu RdYlGn (Đỏ - Vàng - Xanh) theo góp ý người dùng A
     fig_map = px.choropleth(
-        state_data, 
+        state_profit, 
         locations='State', 
         locationmode="USA-states", 
         color='Profit', 
         scope="usa", 
-        color_continuous_scale="RdYlGn", # Đỏ (Lỗ) - Vàng - Xanh (Lãi)
-        title="Phân bố Lợi nhuận theo khu vực địa lý"
+        color_continuous_scale="RdYlGn",
+        title="Định vị rủi ro lợi nhuận trên không gian"
     )
     st.plotly_chart(fig_map, use_container_width=True)
 
 with col2:
-    # 2. BIỂU ĐỒ DOANH THU (Đã sắp xếp theo yêu cầu người dùng)
+    # 3. BIỂU ĐỒ CỘT (Cải tiến sắp xếp theo yêu cầu người dùng C)
     st.subheader("📦 Doanh thu theo Danh mục")
-    cat_data = filtered_df.groupby('Category')['Sales'].sum().reset_index().sort_values('Sales', ascending=False)
+    cat_sales = filtered_df.groupby('Category')['Sales'].sum().reset_index().sort_values('Sales', ascending=False)
+    
     fig_bar = px.bar(
-        cat_data, 
-        x='Category', 
-        y='Sales', 
+        cat_sales, 
+        x='Sales', 
+        y='Category', 
+        orientation='h', 
         color='Category',
         text_auto='.2s',
-        title="Tổng doanh thu từng ngành hàng"
+        title="Thứ tự doanh thu ngành hàng"
     )
     st.plotly_chart(fig_bar, use_container_width=True)
 
-# 3. PHÂN TÍCH DATA STORY
+# --- PHẦN 4: CÂU CHUYỆN DỮ LIỆU ---
 st.divider()
-st.subheader("💡 Câu chuyện dữ liệu (Data Story)")
-st.info("""
-**Vấn đề:** Các bang thuộc khu vực 'Central' (như Texas) đang có mức lợi nhuận âm nặng nhất dù doanh thu rất cao.  
-**Nguyên nhân:** Tỷ lệ chiết khấu (Discount) trung bình tại đây vượt ngưỡng 35%.  
-**Khuyến nghị:** Cần thắt chặt chính sách khuyến mãi và đặt trần chiết khấu 15% để bảo vệ lợi nhuận biên.
+st.subheader("💡 Câu chuyện dữ liệu & Quyết định quản trị")
+if profit < 0:
+    st.error(f"CẢNH BÁO: Lợi nhuận hiện tại đang âm (${profit:,.0f}).")
+else:
+    st.success("Tình hình lợi nhuận đang ở mức ổn định.")
+
+st.write("""
+**Phân tích chiến lược:** Qua bản đồ, chúng ta thấy **Texas** và **Ohio** đang chịu mức lỗ nặng nề nhất. 
+Khi kết hợp với bộ lọc, dữ liệu cho thấy nhóm hàng **Furniture** đang bị lạm dụng chiết khấu quá cao. 
+**Quyết định:** Đề xuất áp dụng mức trần chiết khấu 15% cho vùng Central để phục hồi biên lợi nhuận.
 """)
