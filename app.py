@@ -18,7 +18,7 @@ except FileNotFoundError:
 
 # --- SIDEBAR: CÁC THÀNH PHẦN TƯƠNG TÁC ---
 st.sidebar.header("🕹️ Bộ lọc Tương tác")
-st.sidebar.info("Cải tiến: Thêm bộ lọc Segment theo yêu cầu người dùng B")
+st.sidebar.info("Cải tiến: Thêm bộ lọc Segment theo yêu cầu người dùng")
 
 region_list = st.sidebar.multiselect(
     "Chọn Vùng (Region):", 
