@@ -4,7 +4,7 @@ import plotly.express as px
 
 # Cấu hình trang Dashboard
 st.set_page_config(page_title="Superstore Analytics - Tuần 5", layout="wide")
-st.title("📊 Dashboard Quản trị Kinh doanh - Phiên bản Hoàn thiện")
+st.title("📊 Dashboard")
 
 # Đọc dữ liệu
 df = pd.read_csv('SampleSuperstore.csv')
